@@ -8,12 +8,12 @@ function initTable() {
         height: getHeight(),
         columns: [
             [
-                {
+                /*{
                     field: 'state',
                     checkbox: true,
                     align: 'center',
                     valign: 'middle'
-                }, {
+                }, */{
                     title: 'CrawlerName',
                     field: 'crawler_name',
                     align: 'center',
@@ -33,11 +33,13 @@ function initTable() {
                 }, {
                     field: 'create_time',
                     title: 'CreateTime',
-                    align: 'center'
+                    align: 'center',
+                    formatter: timeFormatter
                 }, {
                     field: 'modify_time',
                     title: 'ModifyTime',
-                    align: 'center'
+                    align: 'center',
+                    formatter: timeFormatter
                 }, {
                     field: 'operate',
                     title: 'Item Operate',
@@ -73,8 +75,10 @@ function initTable() {
     });
     $remove.click(function () {
         var ids = getIdSelections();
+        console.log(ids);
+        // remove api
         $table.bootstrapTable('remove', {
-            field: 'id',
+            field: 'crawler_name',
             values: ids
         });
         $remove.prop('disabled', true);
@@ -89,7 +93,8 @@ function initTable() {
 
 function getIdSelections() {
     return $.map($table.bootstrapTable('getSelections'), function (row) {
-        return row.id
+        console.log(row.crawler_name);
+        return row.crawler_name
     });
 }
 
@@ -111,18 +116,34 @@ function operateFormatter(value, row, index) {
     ].join('');
 }
 
+function timeFormatter(value, row, index) {
+    if (value <= 0) return "-";
+    var t = new Date();
+    t.setTime(value * 1000)
+    return t.toLocaleString();
+}
+
 window.operateEvents = {
     'click .like': function (e, value, row, index) {
-        alert('You click like action, row: ' + JSON.stringify(row) + row.id);
+        window.open("/editor/?name=" + row.crawler_name);
     },
     'click .remove': function (e, value, row, index) {
-        $table.bootstrapTable('remove', {
-            field: 'id',
-            values: [row.id]
+        var url = "/api/crawler/delete/" + row.crawler_name;
+        $.ajax({
+            url: url,
+            cache: false,
+            success: function(data) {
+                $table.bootstrapTable('remove', {
+                    field: 'crawler_name',
+                    values: [row.crawler_name]
+                });
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown) {
+                $.fn.modalAlert(XMLHttpRequest.responseText, "error");
+            }
         });
     }
 };
-
 
 function getHeight() {
     return $(window).height() - $('h1').outerHeight(true);

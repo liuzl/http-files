@@ -1,3 +1,11 @@
+
+function GetQueryString(name) {
+  var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");
+  var r = window.location.search.substr(1).match(reg);
+  if (r != null) return unescape(r[2]);
+  return null;
+}
+
 // Initialize the editor with a JSON schema
 var editor = new JSONEditor(document.getElementById('editor_holder'), {
   ajax: true, disable_properties: true,
@@ -14,10 +22,14 @@ function submit() {
         indicator.textContent = err;
         return
     }
-
+    var name = GetQueryString("name");
+    var url = "/api/crawler/create/";
+    if (name != null) {
+      url = "/api/crawler/update/";
+    }
     $.ajax({
       type: "POST",
-      url: "/api/crawler/create/" + editor.getValue().crawler_name,
+      url: url + editor.getValue().crawler_name,
       dataType: "json",
       data: JSON.stringify(editor.getValue()),
       success: function(data) {
@@ -44,10 +56,21 @@ editor.on('change',function() {
   }
 });
 
-document.getElementById('restore').addEventListener('click',function() {
-  $.getJSON("default.json", function(result) {
+function fillEditor(url) {
+  $.getJSON(url, function(result) {
     editor.setValue(result);
-    console.log(JSON.stringify(result));
+    //console.log(JSON.stringify(result));
   });
+}
+
+document.getElementById('restore').addEventListener('click',function() {
+  fillEditor("default.json");
 });
 
+editor.on('ready', function(){
+  var name = GetQueryString("name");
+  if (name != null) {
+    console.log(name);
+    fillEditor("/api/crawler/retrieve/" + name);
+  }
+});
